@@ -34,6 +34,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,6 +52,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import io.github.takusan23.akaricore.common.toAkariCoreInputOutputData
@@ -68,6 +71,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -305,20 +309,58 @@ private fun VideoThumbnailImage(
     val thumbnailBitmap = remember { mutableStateOf<ImageBitmap?>(null) }
     val isShowBottomSheet = remember { mutableStateOf(false) }
 
+    val title = remember { mutableStateOf("") }
+    val videoSize = remember { mutableStateOf("") }
+    val duration = remember { mutableStateOf("") }
+
     LaunchedEffect(key1 = uri) {
         withContext(Dispatchers.IO) {
-            thumbnailBitmap.value = runCatching {
-                context.contentResolver.loadThumbnail(uri, Size(320, 320), null).asImageBitmap()
-            }.getOrNull()
+            try {
+                thumbnailBitmap.value = context.contentResolver.loadThumbnail(uri, Size(320, 320), null).asImageBitmap()
+
+                MediaMetadataRetriever().apply {
+                    context.contentResolver.openFileDescriptor(uri, "r")?.use {
+                        setDataSource(it.fileDescriptor)
+                    }
+                }.use {
+                    val width = it.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+                    val height = it.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+                    val durationMs = it.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
+                    val simpleDateFormat = SimpleDateFormat("mm:ss.SSS")
+
+                    title.value = VideoTool.getFileName(context, uri) ?: "不明"
+                    videoSize.value = "${width}x${height}"
+                    duration.value = simpleDateFormat.format(durationMs)
+                }
+            } catch (e: Exception) {
+                // do nothing
+            }
         }
     }
 
     // 削除とかできるボトムシート
     if (isShowBottomSheet.value) {
         ModalBottomSheet(onDismissRequest = { isShowBottomSheet.value = false }) {
+
+            OutlinedCard(modifier = Modifier.padding(10.dp)) {
+                Text(
+                    modifier = Modifier
+                        .padding(10.dp)
+                        .fillMaxWidth(),
+                    text = """
+                        タイトル : ${title.value}
+                        解像度 : ${videoSize.value}
+                        時間 : ${duration.value}
+                    """.trimIndent(),
+                )
+            }
+
             TextButton(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+                onClick = {
+                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    isShowBottomSheet.value = false
+                }
             ) {
                 Text(text = "動画プレイヤーを開く")
             }
@@ -332,6 +374,7 @@ private fun VideoThumbnailImage(
                     } else {
                         // TODO 古い Android は未実装
                     }
+                    isShowBottomSheet.value = false
                 }
             ) {
                 Text(text = "ゴミ箱に移動（Google フォトから復元できます）")

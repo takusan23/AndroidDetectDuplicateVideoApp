@@ -2,6 +2,7 @@ package io.github.takusan23.androiddetectduplicatevideoapp
 
 import android.content.ContentUris
 import android.content.Context
+import android.net.Uri
 import android.provider.MediaStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -46,4 +47,15 @@ object VideoTool {
 
     /** ID から Uri を取る */
     fun getVideoUri(id: Long) = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, id)
+
+    /** Uri からファイル名を取得する */
+    suspend fun getFileName(
+        context: Context,
+        uri: Uri
+    ) = withContext(Dispatchers.IO) {
+        context.contentResolver.query(uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            cursor.moveToFirst()
+            cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME))
+        }
+    }
 }
