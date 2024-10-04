@@ -195,7 +195,7 @@ private fun MainScreen() {
     }
 
     fun compare() {
-        scope.launch {
+        scope.launch(Dispatchers.Default) {
             duplicateVideoList.value = emptyList()
 
             val alreadyAnalyzeUriList = withContext(Dispatchers.IO) {
