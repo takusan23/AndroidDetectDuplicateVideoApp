@@ -317,6 +317,7 @@ private fun VideoThumbnailImage(
         withContext(Dispatchers.IO) {
             try {
                 thumbnailBitmap.value = context.contentResolver.loadThumbnail(uri, Size(320, 320), null).asImageBitmap()
+                title.value = VideoTool.getFileName(context, uri) ?: "不明"
 
                 MediaMetadataRetriever().apply {
                     context.contentResolver.openFileDescriptor(uri, "r")?.use {
@@ -328,7 +329,6 @@ private fun VideoThumbnailImage(
                     val durationMs = it.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong()
                     val simpleDateFormat = SimpleDateFormat("mm:ss.SSS")
 
-                    title.value = VideoTool.getFileName(context, uri) ?: "不明"
                     videoSize.value = "${width}x${height}"
                     duration.value = simpleDateFormat.format(durationMs)
                 }
