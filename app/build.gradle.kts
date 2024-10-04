@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
     alias(libs.plugins.compose.compiler)
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -49,6 +50,13 @@ android {
 
 dependencies {
 
+    val room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version")
+    annotationProcessor("androidx.room:room-compiler:$room_version")
+    ksp("androidx.room:room-compiler:$room_version")
+    implementation("androidx.room:room-ktx:$room_version")
+
+    // 自作ライブラリ。動画からフレームを Bitmap で取り出す
     implementation("io.github.takusan23:akaricore:4.1.1")
 
     implementation(libs.androidx.core.ktx)
